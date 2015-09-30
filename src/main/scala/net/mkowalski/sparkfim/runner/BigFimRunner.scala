@@ -35,11 +35,23 @@ class BigFimRunner(val sc: SparkContext,
       .filter {
       case (_, items) => items.nonEmpty
     }.forcePartitionsNum(forcedPartitionsNum).cacheWith(persistenceManager)
-    val inputItems = inputTidWithItems.map(_._2).cacheWith(persistenceManager)
+    val inputItems = inputTidWithItems.map(_._2)
 
     LOG.info(s"Step 1: generating k-FIs (k=$bfsStages) using BFS (Apriori-like)")
-    val bfsResultBc = performBfsStages(inputItems, minSupBc, sc.broadcast(List.empty[ItemWithSupport]), bfsStages)
+    val bfsSingletonsBc = performBfsStages(inputItems, minSupBc, sc.broadcast(List.empty[ItemWithSupport]), 1)
+    val frequentItemIdsBc = sc.broadcast(bfsSingletonsBc.value.map {
+      case (item, support) => item.extension
+    })
+    val filteredInputTidWithItems = inputTidWithItems.map {
+      case (tid, items) => (tid, items.intersect(frequentItemIdsBc.value))
+    }.cacheWith(persistenceManager)
     persistenceManager.markUnused(inputItems, Low)
+    persistenceManager.markUnused(inputTidWithItems, Low)
+
+    val bfsResultBc = bfsStages match {
+      case 1 => bfsSingletonsBc
+      case _ => performBfsStages(filteredInputTidWithItems.map(_._2), minSupBc, bfsSingletonsBc, bfsStages, currentStage = 2)
+    }
 
     LOG.info(s"Step 2: generating k+1-FIs TID-lists (k=$bfsStages) using BFS")
 
@@ -49,7 +61,7 @@ class BigFimRunner(val sc: SparkContext,
     persistenceManager.markUnused(bfsResultBc)
 
     val tidLists = AprioriTidListMiner(minSupBc)
-      .mine(inputTidWithItems, candidatesBc)
+      .mine(filteredInputTidWithItems, candidatesBc)
       .cacheWith(persistenceManager)
 
     tidLists.map {
@@ -123,6 +135,7 @@ class BigFimRunner(val sc: SparkContext,
   }
 
   private def outputPath(stage: Int) = s"$outputDirectoryPath/stage$stage"
+
 }
 
 object BigFimRunner {
