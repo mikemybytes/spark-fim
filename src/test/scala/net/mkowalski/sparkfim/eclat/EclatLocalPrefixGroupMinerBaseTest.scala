@@ -82,7 +82,7 @@ abstract class EclatLocalPrefixGroupMinerBaseTest extends BaseTest with FimDataT
     }
   }
 
-  private def verifySupportResult(expectedSupport: Map[Item, Int], result: Map[Item, Int]): Unit = {
+  protected def verifySupportResult(expectedSupport: Map[Item, Int], result: Map[Item, Int]): Unit = {
     assert(result.size == expectedSupport.size, "Result map has different size")
     expectedSupport.foreach {
       case (item, support) => assert(support == result(item), "Invalid support for " + item)
@@ -107,25 +107,6 @@ abstract class EclatLocalPrefixGroupMinerBaseTest extends BaseTest with FimDataT
 
   def mine(prefixGroup: PrefixGroup): Map[Item, Int] = {
     EclatLocalPrefixGroupMiner(prefixGroup, minSupport).mine(mineWithDiffsets).toMap
-  }
-
-  test("Mine group with limited depth and find next prefix group") {
-    val depthLimit = 3
-    val expectedSupport = limitToDepth(groupWithSingleElementExpectedSupport, depthLimit)
-    val result = EclatLocalPrefixGroupMiner(groupWithSingleElement, depthLimit, minSupport)
-      .mineWithNextGroups(mineWithDiffsets)
-      .toList
-    verifySupportResult(expectedSupport, result.head._1.toMap)
-
-    val expectedNextPrefixGroup = PrefixGroup(Prefix(1, 2), List(
-      PrefixGroupExtension(3, Array(1, 3, 4)),
-      PrefixGroupExtension(4, Array(2, 3, 4))
-    ))
-
-    val nextPrefixGroups = result.head._2
-
-    assert(nextPrefixGroups.size == 1)
-    assert(nextPrefixGroups.head == expectedNextPrefixGroup)
   }
 
   def mineWithDiffsets: Boolean

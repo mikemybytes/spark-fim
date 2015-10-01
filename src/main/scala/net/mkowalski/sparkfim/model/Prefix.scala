@@ -20,7 +20,7 @@ class Prefix(private val prefixItemIds: Array[Int]) extends Serializable {
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
-  override def toString = s"Prefix(prefixItemIds=$prefixItemIds)"
+  override def toString = s"Prefix(prefixItemIds=${prefixItemIds.mkString("(", ",", ")")})"
 
 }
 

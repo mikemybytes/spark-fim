@@ -35,7 +35,14 @@ class EclatLocalPrefixGroupMiner(val initialPrefixGroup: PrefixGroup,
           case true => Some(List())
           case _ => None
         }
-        mineGroups(List(initialPrefixGroup), withDiffsets, nextGroups)
+
+        withDiffsets match {
+          case true =>
+            val prefixGroup = PrefixGroupDiffsetConverter.convert(initialPrefixGroup)
+            mineGroups(List(prefixGroup), withDiffsets, nextGroups, PrefixGroupDiffsetCombiner(minSup))
+          case _ =>
+            mineGroups(List(initialPrefixGroup), withDiffsets, nextGroups, PrefixGroupTidListCombiner(minSup))
+        }
     }
   }
 
@@ -50,8 +57,8 @@ class EclatLocalPrefixGroupMiner(val initialPrefixGroup: PrefixGroup,
   private def mineGroups(prefixGroups: List[PrefixGroup],
                          switchToDiffsets: Boolean,
                          nextGroups: Option[List[PrefixGroup]],
-                         fisFound: List[ItemWithSupport] = List(),
-                         combiner: PrefixGroupCombiner = PrefixGroupTidListCombiner(minSup)): (List[ItemWithSupport], Option[List[PrefixGroup]]) = {
+                         combiner: PrefixGroupCombiner,
+                         fisFound: List[ItemWithSupport] = List()): (List[ItemWithSupport], Option[List[PrefixGroup]]) = {
 
     def mineGroup(prefixGroup: PrefixGroup): (List[PrefixGroup], List[ItemWithSupport]) = {
       val extensions = prefixGroup.extensions.zipWithIndex
@@ -75,13 +82,6 @@ class EclatLocalPrefixGroupMiner(val initialPrefixGroup: PrefixGroup,
       (prefixGroupsNew, fisFoundNew)
     }
 
-    def nextStageCombiner: PrefixGroupCombiner = {
-      switchToDiffsets match {
-        case true => PrefixGroupDiffsetCombiner(minSup)
-        case _ => combiner
-      }
-    }
-
     def nextGroupsWith(prefixGroup: PrefixGroup): Option[List[PrefixGroup]] = {
       nextGroups match {
         case None => None
@@ -95,8 +95,8 @@ class EclatLocalPrefixGroupMiner(val initialPrefixGroup: PrefixGroup,
         mineGroups(tail,
           switchToDiffsets,
           nextGroupsWith(head),
-          fisFound,
-          nextStageCombiner
+          combiner,
+          fisFound
         )
       case head :: tail =>
         mineGroup(head) match {
@@ -104,8 +104,8 @@ class EclatLocalPrefixGroupMiner(val initialPrefixGroup: PrefixGroup,
             mineGroups(headPrefixGroupsFound ::: tail,
               switchToDiffsets,
               nextGroups,
-              headFisFound ::: fisFound,
-              nextStageCombiner
+              combiner,
+              headFisFound ::: fisFound
             )
         }
     }

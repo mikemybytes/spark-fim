@@ -31,6 +31,14 @@ object SparkContextProvider {
     new SparkContext(conf)
   }
 
+  private def confWithKryo(): SparkConf = {
+    val conf = new SparkConf()
+    conf.set("spark.driver.extraJavaOptions", "-XX:+UseG1GC")
+    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerialzer")
+    conf.registerKryoClasses(kryoSerializableClasses)
+    conf
+  }
+
   def provideForTest(appName: String): SparkContext = {
     val conf = confWithKryo()
       .setAppName(appName)
@@ -40,14 +48,6 @@ object SparkContextProvider {
     //      .set("spark.executor.memory", "2g")
     //      .set("spark.executor.extraJavaOptions", "-XX:+PrintGCDetails -XX:+PrintGCTimeStamps")
     new SparkContext(conf)
-  }
-
-  private def confWithKryo(): SparkConf = {
-    val conf = new SparkConf()
-    conf.set("spark.driver.extraJavaOptions", "-XX:+UseG1GC")
-    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerialzer")
-    conf.registerKryoClasses(kryoSerializableClasses)
-    conf
   }
 
 }

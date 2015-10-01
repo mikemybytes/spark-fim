@@ -7,7 +7,8 @@ case class PrefixGroupDiffsetCombiner(minSup: MinSupport) extends PrefixGroupCom
   override def combine(extension: PrefixGroupExtension,
                        another: PrefixGroupExtension): Iterable[PrefixGroupExtension] = {
 
-    val tidList = extension.tidList.diff(another.tidList)
+    val common = extension.tidList.intersect(another.tidList).toSet
+    val tidList = another.tidList.filterNot(common)
     val support = extension.support - tidList.length
 
     support match {

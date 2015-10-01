@@ -12,6 +12,10 @@ object HorizontalDbUtil extends Serializable {
     }
   }
 
+  private def toItemIds(itemIdsText: String): Array[Int] = {
+    itemIdsText.split(itemIdSeparator).map(itemId => itemId.toInt)
+  }
+
   def lineToTidWithItems(line: String): (Int, Array[Int]) = {
     line.split(tidSeparator) match {
       case Array(transactionId, itemIdsText) =>
@@ -22,10 +26,6 @@ object HorizontalDbUtil extends Serializable {
         // no Option type for performance reasons
         invalidTidWithItemIds
     }
-  }
-
-  private def toItemIds(itemIdsText: String): Array[Int] = {
-    itemIdsText.split(itemIdSeparator).map(itemId => itemId.toInt)
   }
 
 }

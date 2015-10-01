@@ -83,7 +83,7 @@ class BigFimRunner(val sc: SparkContext,
     ).flatMap {
       case (prefix, extensions) =>
         val prefixGroup = PrefixGroup(prefix, extensions.toList)
-        EclatLocalPrefixGroupMiner(prefixGroup, minSupBc.value).mine()
+        EclatLocalPrefixGroupMiner(prefixGroup, minSupBc.value).mine(withDiffsets = true)
     }.saveAsTextFile(outputPath(bfsStages + 2))
 
     LOG.info("BigFIM processing finished")
